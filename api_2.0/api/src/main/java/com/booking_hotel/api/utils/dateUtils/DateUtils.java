@@ -1,4 +1,4 @@
-package com.booking_hotel.api.utils;
+package com.booking_hotel.api.utils.dateUtils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

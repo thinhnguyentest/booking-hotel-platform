@@ -5,11 +5,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class ErrorResponse {
-    private String errorMessage;
-    private String errorCode;
+public class ApiErrorResponse {
+    private String path;
+    private String timestamp;
+    private List<String> errors;
 }

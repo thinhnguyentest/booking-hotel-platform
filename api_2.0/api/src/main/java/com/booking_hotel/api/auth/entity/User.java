@@ -1,33 +1,39 @@
-package com.booking_hotel.api.auth.authEntity;
+package com.booking_hotel.api.auth.entity;
 
-
+import com.booking_hotel.api.role.entity.Role;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
-import java.time.LocalDateTime;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.ZonedDateTime;
+import java.util.Set;
 
 @Data
 @Entity
-@Table(name = "user")
+@NoArgsConstructor
+@Table(name = "Users")
 public class User {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    private Integer userId;
+    private Long userId;
 
-    @Column(name = "username", length = 50, nullable = false)
     private String username;
 
-    @Column(name = "password", length = 255, nullable = false)
     private String password;
 
-    @Column(name = "email", length = 100, nullable = false)
     private String email;
 
-    @Column(name = "role_id", nullable = false)
-    private Integer roleId;
+    @ManyToMany
+    @JoinTable(
+            name = "UserRoles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    @CreationTimestamp
+    private ZonedDateTime createDt;
 }
-
