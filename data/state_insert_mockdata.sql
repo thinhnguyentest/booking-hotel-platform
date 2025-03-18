@@ -1,8 +1,8 @@
 -- Insert dữ liệu vào bảng Roles
 INSERT INTO Roles (role_name) VALUES
-('customer'),
-('admin'),
-('business_owner');
+('ROLE_CUSTOMER'),
+('ROLE_ADMIN'),
+('ROLE_OWNER');
 
 -- Insert dữ liệu vào bảng Users
 INSERT INTO Users (username, password, email) VALUES
@@ -11,14 +11,14 @@ INSERT INTO Users (username, password, email) VALUES
 ('user3', 'hash3', 'user3@example.com');
 
 -- Insert dữ liệu vào bảng UserRoles
-INSERT INTO UserRoles (user_id, role_id) VALUES
+INSERT INTO User_Roles (user_id, role_id) VALUES
 (1, 1), -- user1 là customer
 (2, 2), -- user2 là admin
 (3, 3); -- user3 là business_owner
 
 -- Insert dữ liệu vào bảng Hotels
 INSERT INTO Hotels (name, address, city, country, description, owner_id) VALUES
-('Hotel A', '123 Main St', 'Hanoi', 'Vietnam', 'A luxurious hotel in the heart of the city.', 3),
+('Hotel A', '123 Main St', 'Ha Noi', 'Vietnam', 'A luxurious hotel in the heart of the city.', 3),
 ('Hotel B', '456 Elm St', 'Ho Chi Minh City', 'Vietnam', 'A cozy hotel with great amenities.', 3);
 
 -- Insert dữ liệu vào bảng Rooms

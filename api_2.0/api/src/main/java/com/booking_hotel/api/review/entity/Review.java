@@ -4,12 +4,18 @@ package com.booking_hotel.api.review.entity;
 import com.booking_hotel.api.auth.entity.User;
 import com.booking_hotel.api.hotel.entity.Hotel;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.ZonedDateTime;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 @Table(name = "Reviews")
 public class Review {
@@ -23,8 +29,8 @@ public class Review {
     private Hotel hotel;
 
     @ManyToOne
-    @JoinColumn(name = "customer_id", nullable = false)
-    private User customer;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(nullable = false)
     private Integer rating;

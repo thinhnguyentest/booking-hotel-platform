@@ -11,4 +11,7 @@ public class HotelResponse {
     private String city;
     private String country;
     private String description;
+    private Double rating;
+    private String photos;
+    private Double cheapestPrice;
 }

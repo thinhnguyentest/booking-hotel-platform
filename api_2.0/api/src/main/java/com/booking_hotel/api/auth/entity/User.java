@@ -36,4 +36,14 @@ public class User {
 
     @CreationTimestamp
     private ZonedDateTime createDt;
+
+    private boolean isBanned;
+
+    private ZonedDateTime bannedUntil;
+
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    private int failedLoginAttempts;
+
+    private String refreshToken;
+
 }

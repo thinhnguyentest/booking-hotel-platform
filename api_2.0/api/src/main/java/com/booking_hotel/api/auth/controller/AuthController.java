@@ -2,18 +2,22 @@ package com.booking_hotel.api.auth.controller;
 
 import static com.booking_hotel.api.utils.messageUtils.MessageUtils. *;
 import static com.booking_hotel.api.utils.regexUtils.RegexUtils. *;
-import static com.booking_hotel.api.utils.roleUtils.RoleUtils. *;
 import static com.booking_hotel.api.utils.emailUtils.LinkSendMail. *;
 import com.booking_hotel.api.auth.dto.AuthResponse;
-import com.booking_hotel.api.auth.config.JwtProvider;
+import com.booking_hotel.api.auth.config.jwt.JwtProvider;
 import com.booking_hotel.api.auth.dto.ResetPasswordRequest;
 import com.booking_hotel.api.auth.entity.PasswordResetToken;
 import com.booking_hotel.api.auth.entity.User;
 import com.booking_hotel.api.auth.repository.UserRepository;
-import com.booking_hotel.api.auth.service.EmailService;
-import com.booking_hotel.api.auth.service.PasswordResetTokenService;
+import com.booking_hotel.api.auth.service.mail.EmailService;
+import com.booking_hotel.api.auth.service.owner.OwnerRequestService;
+import com.booking_hotel.api.auth.service.user.PasswordResetTokenService;
+import com.booking_hotel.api.auth.service.user.UserService;
+import com.booking_hotel.api.auth.service.userDetails.CustomUserDetails;
+import com.booking_hotel.api.exception.ElementNotFoundException;
 import com.booking_hotel.api.role.entity.Role;
 import com.booking_hotel.api.role.repository.RoleRepository;
+import com.booking_hotel.api.utils.roleUtils.RoleUtils;
 import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,13 +25,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+
+import java.time.ZonedDateTime;
+import java.util.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -43,6 +49,9 @@ public class AuthController {
     private final PasswordResetTokenService tokenService;
 
     private final EmailService emailService;
+
+    private final OwnerRequestService ownerRequestService;
+    private final UserService userService;
 
 
     @PostMapping("/signup")
@@ -61,13 +70,13 @@ public class AuthController {
 
         // validate Password
         if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
-            throw new Exception(PASSWORD_NULL);
+            throw new IllegalArgumentException(PASSWORD_NULL);
         }
         if (user.getPassword().length() < 8 || user.getPassword().length() > 32) {
-            throw new Exception(PASSWORD_RANGE);
+            throw new IllegalArgumentException(PASSWORD_RANGE);
         }
         if (!user.getPassword().matches(PASSWORD_REGEX)) {
-            throw new Exception(PASSWORD_FORMAT);
+            throw new IllegalArgumentException(PASSWORD_FORMAT);
         }
 
         // Validate Email
@@ -91,71 +100,117 @@ public class AuthController {
 
         // Handle role
         Set<Role> roles = new HashSet<>();
-        if (user.getRoles() == null || user.getRoles().isEmpty()) {
-            // Initial default role ("customer")
-            Role defaultRole = roleRepository.findRoleByRoleName(CUSTOMER);
-            if (defaultRole == null) {
-                defaultRole = new Role();
-                defaultRole.setRoleName(CUSTOMER);
-                roleRepository.save(defaultRole); // Lưu vai trò mặc định nếu chưa tồn tại
-            }
-            roles.add(defaultRole);
-        } else {
-            // Check and save role
-            for (Role role : user.getRoles()) {
-                Role existingRole = roleRepository.findRoleByRoleName(role.getRoleName());
-                if (existingRole == null) {
-                    roleRepository.save(role);
-                }
-                roles.add(existingRole != null ? existingRole : role);
-            }
+
+        Role defaultRole = roleRepository.findRoleByRoleName(RoleUtils.ROLE_USER);
+        if (defaultRole == null) {
+            defaultRole = new Role();
+            defaultRole.setRoleName(RoleUtils.ROLE_USER);
+            roleRepository.save(defaultRole);
         }
+
+        roles.add(defaultRole);
         newUser.setRoles(roles);
 
         // Save new user
         userRepository.save(newUser);
 
-        // Create JWT token
-        Authentication auth = new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword());
-        String jwt = JwtProvider.generateToken(auth);
-
-        // Response
-        AuthResponse response = AuthResponse.builder()
-                                        .jwt(jwt)
-                                        .build();
-
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+        return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
     @PostMapping("/signin")
     public ResponseEntity<AuthResponse> login(@RequestBody User user) throws Exception {
-        // Tìm người dùng theo username
+        // find user by username
         User existingUser = userRepository.findUserByUsername(user.getUsername());
 
-        if (existingUser.getUsername() == null || user.getUsername().trim().isEmpty()) {
+        if (existingUser == null || user.getUsername().trim().isEmpty()) {
             throw new Exception(USER_NOT_FOUND);
         }
+
+        //check isBanned of existUser
+        if (existingUser.getBannedUntil() != null && ZonedDateTime.now().isAfter(existingUser.getBannedUntil())) {
+            // If the ban period has expired, set Banned False
+            existingUser.setBanned(false);
+            existingUser.setBannedUntil(null);
+            userRepository.save(existingUser);
+        } else if (existingUser.isBanned()) {
+            // If the user is still banned, log error
+            throw new Exception(BANNED_USER_MESSAGE);
+        }
+
+        // Check the times input account
         if (!passwordEncoder.matches(user.getPassword(), existingUser.getPassword())) {
-            throw new Exception(PASSWORD_INVALID);
+            if (existingUser.getFailedLoginAttempts() >= 4) {
+                // ban user for 10 minutes
+                existingUser.setBanned(true);
+                existingUser.setBannedUntil(ZonedDateTime.now().plusMinutes(10));
+                userRepository.save(existingUser);
+                throw new Exception(BAN_USER_MESSAGE);
+            } else {
+                // Increase times of incorrect password entries
+                existingUser.setFailedLoginAttempts(existingUser.getFailedLoginAttempts() + 1);
+                userRepository.save(existingUser);
+                throw new Exception(PASSWORD_INVALID);
+            }
+        } else {
+            // Reset times of incorrect password entries
+            existingUser.setFailedLoginAttempts(0);
+            userRepository.save(existingUser);
         }
 
         // Initial Authentication
-        Authentication auth = new UsernamePasswordAuthenticationToken
-                (existingUser.getUsername(), existingUser.getPassword());
+        Authentication auth = new UsernamePasswordAuthenticationToken(existingUser.getUsername(), existingUser.getRoles());
 
         // Set Authentication inside SecurityContext
         SecurityContextHolder.getContext().setAuthentication(auth);
 
-        // Create token JWT
-        String jwt = JwtProvider.generateToken(auth);
+        // Create refreshToken
+        String refreshToken = UUID.randomUUID().toString(); // Tạo một Refresh Token ngẫu nhiên
+        existingUser.setRefreshToken(refreshToken);
+        userRepository.save(existingUser);
+
+        // Create JWT token
+        String jwt = JwtProvider.generateToken(existingUser.getUsername(), existingUser.getRoles());
+        Set<Role> roles = existingUser.getRoles();
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        for (Role role : roles) {
+            authorities.add(new SimpleGrantedAuthority(role.getRoleName()));
+        }
+        // Lưu token vào UserDetails
+        CustomUserDetails customUserDetails = new CustomUserDetails(existingUser.getUsername(), existingUser.getPassword(), authorities);
+        customUserDetails.setToken(jwt);
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(customUserDetails, null, customUserDetails.getAuthorities()));
 
         // Create response
         AuthResponse response = AuthResponse.builder()
-                                            .jwt(jwt)
-                                            .build();
+                .accessToken(jwt)
+                .refreshToken(refreshToken)
+                .build();
 
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<AuthResponse> refreshToken(@RequestParam String refreshToken) throws Exception {
+        // Find user by refreshToken
+        User existingUser = userRepository.findUserByRefreshToken(refreshToken);
+        if (existingUser == null) {
+            throw new Exception("Invalid refresh token");
+        }
+
+        // reset access token
+        String newJwt = JwtProvider.generateToken(existingUser.getUsername(), existingUser.getRoles());
+
+        // Tạo phản hồi mới
+        AuthResponse response = AuthResponse.builder()
+                .accessToken(newJwt)
+                .refreshToken(refreshToken)
+                .build();
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+
+
 
     @PostMapping("/forgotPassword")
     public ResponseEntity<?> forgotPassword(@RequestParam String email) {
@@ -180,8 +235,23 @@ public class AuthController {
 
     @PostMapping("/resetPassword")
     public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest resetPasswordRequest) {
+        // validate Password
+        if (resetPasswordRequest.getNewPassword() == null || resetPasswordRequest.getNewPassword().trim().isEmpty()) {
+            throw new IllegalArgumentException(PASSWORD_NULL);
+        }
+        if (resetPasswordRequest.getNewPassword().length() < 8 || resetPasswordRequest.getNewPassword().length() > 32) {
+            throw new IllegalArgumentException(PASSWORD_RANGE);
+        }
+        if (!resetPasswordRequest.getNewPassword().matches(PASSWORD_REGEX)) {
+            throw new IllegalArgumentException(PASSWORD_FORMAT);
+        }
+
+
+
         if (tokenService.isValidToken(resetPasswordRequest.getToken())) {
-            User user = tokenService.getUserByToken(resetPasswordRequest.getToken()).orElseThrow(() -> new RuntimeException("Invalid token"));
+            User user = tokenService.getUserByToken(resetPasswordRequest.getToken())
+                    .orElseThrow(() -> new RuntimeException(TOKEN_INVALID));
+
             user.setPassword(passwordEncoder.encode(resetPasswordRequest.getNewPassword())); // Mã hóa mật khẩu trước khi lưu
             userRepository.save(user);
             tokenService.deleteToken(resetPasswordRequest.getToken());
@@ -191,5 +261,26 @@ public class AuthController {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(TOKEN_INVALID);
     }
+
+    @PostMapping("/signupBecomeOwner")
+    public ResponseEntity<?> signupBecomeOwner(@RequestHeader("Authorization") String accessToken) {
+        String token = accessToken.substring(7);
+        return ownerRequestService.signupBecomeOwner(token);
+    }
+
+    @PostMapping("/approveOwner")
+    public ResponseEntity<?> approveOwner(@RequestParam Long userId) {
+        return ownerRequestService.approveOwner(userId);
+    }
+
+    @PostMapping("/unbanUser")
+    public ResponseEntity<?> unbanUser(@RequestParam Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(()
+                -> new ElementNotFoundException(USER_NOT_FOUND));
+        user.setBanned(false);
+        userRepository.save(user);
+        return ResponseEntity.noContent().build();
+    }
+
 
 }

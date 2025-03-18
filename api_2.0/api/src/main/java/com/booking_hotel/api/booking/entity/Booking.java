@@ -3,14 +3,19 @@ package com.booking_hotel.api.booking.entity;
 import com.booking_hotel.api.auth.entity.User;
 import com.booking_hotel.api.room.entity.Room;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Data
 @Entity
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "Bookings")
 public class Booking {
     @Id
@@ -19,18 +24,18 @@ public class Booking {
     private Long bookingId;
 
     @ManyToOne
-    @JoinColumn(name = "customer_id", nullable = false)
-    private User customer;
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @ManyToOne
-    @JoinColumn(name = "room_id", nullable = false)
+    @JoinColumn(name = "room_id")
     private Room room;
 
     @Column(name = "check_in_date", nullable = false)
-    private LocalDate checkInDate;
+    private ZonedDateTime checkInDate;
 
     @Column(name = "check_out_date", nullable = false)
-    private LocalDate checkOutDate;
+    private ZonedDateTime checkOutDate;
 
     @Column(name = "total_price", nullable = false)
     private Double totalPrice;
@@ -38,6 +43,6 @@ public class Booking {
     private String status;
 
     @CreationTimestamp
-    private LocalDateTime createdAt;
+    private ZonedDateTime createdAt;
 }
 

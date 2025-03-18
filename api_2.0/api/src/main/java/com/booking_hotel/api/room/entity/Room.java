@@ -3,15 +3,21 @@ package com.booking_hotel.api.room.entity;
 
 import com.booking_hotel.api.hotel.entity.Hotel;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 @Entity
 @Table(name = "Rooms")
 public class Room {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long room_id;
+    private Long roomId;
 
     @ManyToOne
     @JoinColumn(name = "hotel_id", nullable = false)
