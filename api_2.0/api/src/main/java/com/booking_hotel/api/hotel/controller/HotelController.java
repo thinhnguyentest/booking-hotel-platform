@@ -108,4 +108,5 @@ public class HotelController {
         List<HotelResponse> hotelResponses = hotelService.searchHotelsWithSpecification(specification);
         return ResponseEntity.ok(hotelResponses);
     }
+
 }

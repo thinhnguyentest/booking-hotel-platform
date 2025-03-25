@@ -1,0 +1,2 @@
+## cheapestPrice sẽ cập nhật giá trị của phòng thấp nhất
+## logic xử lí cancel với stripe

@@ -27,7 +27,7 @@ public class JwtProvider {
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(new Date().getTime() + 80900919))
                 .claim("username", username)
-                .claim("authorities", roleUsers)
+                .claim("roles", roleUsers)
                 .signWith(getSecretKey(), SignatureAlgorithm.HS512)
                 .compact();
         return jwt;

@@ -13,7 +13,6 @@ public class DateUtils {
     }
 
     public static String formatZonedDateTimeString(String dateTimeString) {
-        System.out.println(dateTimeString);
         ZonedDateTime dateTime = ZonedDateTime.parse(dateTimeString, DateTimeFormatter.ISO_ZONED_DATE_TIME);
         return formatZonedDateTime(dateTime, DATE_TIME_FORMAT_EMAIL);
     }

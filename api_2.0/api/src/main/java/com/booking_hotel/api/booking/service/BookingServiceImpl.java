@@ -4,6 +4,7 @@ import static com.booking_hotel.api.utils.messageUtils.MessageUtils. *;
 
 import com.booking_hotel.api.auth.config.jwt.JwtProvider;
 import com.booking_hotel.api.auth.entity.User;
+import com.booking_hotel.api.auth.repository.UserRepository;
 import com.booking_hotel.api.auth.service.mail.EmailService;
 import com.booking_hotel.api.auth.service.user.UserService;
 import com.booking_hotel.api.booking.dto.BookingResponse;
@@ -15,6 +16,8 @@ import com.booking_hotel.api.hotel.repository.HotelRepository;
 import com.booking_hotel.api.room.entity.Room;
 import com.booking_hotel.api.room.reposiroty.RoomRepository;
 import com.booking_hotel.api.room.service.RoomService;
+import com.booking_hotel.api.utils.bookingUtils.BookingUtils;
+import com.booking_hotel.api.utils.dateUtils.DateUtils;
 import com.booking_hotel.api.utils.dtoUtils.BookingResponseUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,8 +38,8 @@ public class BookingServiceImpl implements BookingService {
     private final RoomService roomService;
     private final RoomRepository roomRepository;
     private final EmailService emailService;
-    private final PDFService pdfService;
     private final HotelRepository hotelRepository;
+    private final BookingUtils bookingUtils;
 
     @Override
     public Optional<BookingResponse> getBookingById(Long id) {
@@ -53,15 +56,13 @@ public class BookingServiceImpl implements BookingService {
             throw new ElementNotFoundException(NOT_FOUND_ROOM_MESSAGE);
         }
 
-        if(!roomOptional.get().getIsAvailable()){
-            throw new IllegalArgumentException(NOT_AVAILABLE_ROOM_MESSAGE);
+        if(!bookingUtils.checkRoomAvailable(booking, roomId)) {
+            throw new ElementNotFoundException(NOT_AVAILABLE_ROOM_MESSAGE);
         }
+
         Optional<User> userOptional = userService.findByUsername(JwtProvider.getUserNameByToken(token));
         if(userOptional.isEmpty()) {
             throw new ElementNotFoundException(USER_NOT_FOUND);
-        }
-        if(roomOptional.isEmpty()) {
-            throw new ElementNotFoundException(NOT_FOUND_ROOM_MESSAGE);
         }
         Booking newBooking = Booking.builder()
                 .user(userOptional.get())
@@ -72,14 +73,9 @@ public class BookingServiceImpl implements BookingService {
                 .status("PENDING")
                 .build();
 
-        Booking bookingSaved = bookingRepository.save(newBooking);
+        bookingRepository.save(newBooking);
 
-        Room room = roomOptional.get();
-        room.setIsAvailable(false);
-        roomRepository.save(room);
-
-        BookingResponse bookingResponse = BookingResponseUtils.buildBookingResponse(newBooking);
-        return bookingResponse;
+        return BookingResponseUtils.buildBookingResponse(newBooking);
     }
 
     @Override
@@ -107,8 +103,9 @@ public class BookingServiceImpl implements BookingService {
     public List<BookingResponse> searchBookings(Specification<Booking> specification) {
         return BookingResponseUtils.convertToBookingResponseList(bookingRepository.findAll(specification));
     }
+
     @Override
-    @Scheduled(cron = "0 */5 * * * ?")
+    @Scheduled(cron = "0 0 17 * * ?") // Chạy mỗi ngày lúc
     public void sendDailyBookingReport() {
         List<Hotel> hotelList = hotelRepository.findAll();
         for (Hotel hotel : hotelList) {
@@ -117,15 +114,17 @@ public class BookingServiceImpl implements BookingService {
             if (ownerOptional.isEmpty()) {
                 throw new ElementNotFoundException(USER_NOT_FOUND);
             }
-            ResponseEntity<byte[]> pdfResponse = pdfService.generateBookingsReport(bookingList);
 
-            // Giả sử bạn có danh sách email của các OWNER
-            String ownerEmail = ownerOptional.get().getEmail();
-            String subject = "Daily Booking Report";
-            String text = "Please find attached the daily booking report.";
-
-            emailService.sendEmailWithAttachment(ownerEmail, subject, text, pdfResponse.getBody(), "DailyBookingReport.pdf");
+            String ownerEmail = ownerOptional.get().getEmail(); // Thay bằng email của chủ khách sạn
+            String subject = "Daily Booking Report - " + DateUtils.now("dd-MM-yyyy HH:mm");
+            emailService.sendDailyBookingReport(ownerEmail, subject, BookingResponseUtils.convertToBookingResponseList(bookingList));
         }
     }
 
+    @Override
+    public List<BookingResponse> getBookingsByHotel(Long hotelId) {
+        Room room = roomRepository.findById(hotelId).get();
+        List<Booking> bookingList = bookingRepository.findByRoom(room);
+        return BookingResponseUtils.convertToBookingResponseList(bookingList);
+    }
 }

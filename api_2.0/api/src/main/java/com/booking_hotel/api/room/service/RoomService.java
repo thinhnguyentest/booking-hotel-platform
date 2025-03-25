@@ -17,4 +17,5 @@ public interface RoomService {
     Room updateRoom(Long id, Room updatedRoom);
     void deleteRoom(Long id);
     List<Room> searchRooms(Specification<Room> specification);
+//    List<RoomResponse> getRoomsAvailableByHotel(Long hotelId, String checkInDate, String checkOutDate);
 }

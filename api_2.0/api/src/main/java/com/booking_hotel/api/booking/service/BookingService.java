@@ -2,6 +2,7 @@ package com.booking_hotel.api.booking.service;
 
 import com.booking_hotel.api.booking.dto.BookingResponse;
 import com.booking_hotel.api.booking.entity.Booking;
+import com.booking_hotel.api.hotel.entity.Hotel;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
@@ -15,4 +16,5 @@ public interface BookingService {
     void deleteBooking(Long id);
     List<BookingResponse> searchBookings(Specification<Booking> specification);
     void sendDailyBookingReport();
+    List<BookingResponse> getBookingsByHotel(Long hotelId);
 }

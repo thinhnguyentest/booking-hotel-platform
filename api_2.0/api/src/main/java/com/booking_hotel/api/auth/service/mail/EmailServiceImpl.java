@@ -1,6 +1,7 @@
 package com.booking_hotel.api.auth.service.mail;
 
 import com.booking_hotel.api.booking.dto.BookingResponse;
+import com.booking_hotel.api.booking.service.PDFService;
 import com.booking_hotel.api.utils.dateUtils.DateUtils;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeBodyPart;
@@ -8,11 +9,16 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import jakarta.mail.util.ByteArrayDataSource;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
@@ -101,20 +107,14 @@ public class EmailServiceImpl implements EmailService {
         return sb.toString();
     }
 
-
-    @Async
-    public void sendEmailWithAttachment(String to, String subject, String text, byte[] pdfData, String pdfFileName) {
+    public void sendEmailWithAttachment(String to, String subject, String text, File file) {
         MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper;
-
         try {
-            helper = new MimeMessageHelper(message, true); // true để cho phép đính kèm
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
             helper.setTo(to);
             helper.setSubject(subject);
-            helper.setText(text, true); // true indicates that the text is HTML
-
-            // Đính kèm file PDF
-            helper.addAttachment(pdfFileName, new ByteArrayDataSource(pdfData, "application/pdf"));
+            helper.setText(text);
+            helper.addAttachment("Daily_Booking_Report.pdf", new FileSystemResource(file));
 
             mailSender.send(message);
         } catch (MessagingException e) {
@@ -122,4 +122,14 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+    @Async
+    @Override
+    public void sendDailyBookingReport(String to, String subject, List<BookingResponse> bookings) {
+        try {
+            File pdfReport = PDFService.generateDailyBookingReport(bookings);
+            sendEmailWithAttachment(to, subject, "Please find the daily booking report attached.", pdfReport);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
 }

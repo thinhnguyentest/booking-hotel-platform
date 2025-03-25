@@ -49,7 +49,7 @@ public class PaymentServiceImpl implements PaymentService {
         Payment newPayment = Payment.builder()
                                     .amount(BigDecimal.valueOf(booking.get().getTotalPrice()))
                                     .paymentMethod(payment.getPaymentMethod())
-                                    .paymentStatus(payment.getPaymentStatus())
+                                    .paymentStatus(payment.getPaymentStatus() == null ? PENDING_BOOKING_STATUS : payment.getPaymentStatus())
                                     .booking(booking.get())
                                     .build();
 
@@ -102,8 +102,8 @@ public class PaymentServiceImpl implements PaymentService {
         SessionCreateParams params =
                 SessionCreateParams.builder()
                         .setMode(SessionCreateParams.Mode.PAYMENT)
-                        .setSuccessUrl("http://localhost:8080/api/payments/checkout/success")
-                        .setCancelUrl("http://localhost:8080/api/payements/checkout/cancel")
+                        .setSuccessUrl("http://localhost:8080/api/payments/checkout/success?paymentId="+paymentId)
+                        .setCancelUrl("http://localhost:8080/api/payements/checkout/cancel?paymentId="+paymentId)
                         .addLineItem(lineItem)
                         .build();
 

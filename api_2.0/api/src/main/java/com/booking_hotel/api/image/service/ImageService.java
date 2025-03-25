@@ -1,5 +1,6 @@
 package com.booking_hotel.api.image.service;
 
+import com.booking_hotel.api.hotel.dto.HotelResponse;
 import com.booking_hotel.api.image.dto.ImageResponse;
 import com.booking_hotel.api.image.entity.Image;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,4 +13,5 @@ public interface ImageService {
     ImageResponse getImageById(Long id);
     List<ImageResponse> getImagesByRoomId(Long roomId);
     void deleteImage(Long id);
+    HotelResponse uploadHotelImage(MultipartFile file, Long hotelId);
 }
