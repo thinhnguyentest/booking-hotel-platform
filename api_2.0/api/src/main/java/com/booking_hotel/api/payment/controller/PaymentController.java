@@ -17,9 +17,8 @@
         private final PaymentService paymentService;
 
         @PostMapping("/checkout")
-        public ResponseEntity<StripeResponse> checkoutProducts(@RequestParam Long paymentId,  @RequestHeader("Authorization") String accessToken) {
-            String token = accessToken.substring(7);
-            StripeResponse stripeResponse = paymentService.checkoutBooking(paymentId, token);
+        public ResponseEntity<StripeResponse> checkoutProducts(@RequestParam Long paymentId,  @CookieValue("access_token") String accessToken) {
+            StripeResponse stripeResponse = paymentService.checkoutBooking(paymentId, accessToken);
             return ResponseEntity
                     .status(HttpStatus.OK)
                     .body(stripeResponse);

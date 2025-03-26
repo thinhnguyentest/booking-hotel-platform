@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,4 +25,5 @@ public interface HotelService {
     List<HotelResponse> convertToHotelResponseList(List<Hotel> hotels);
     ResponseEntity<CountByCityResponse> countByCity();
     List<HotelResponse> searchHotelsWithSpecification(Specification<Hotel> specification);
+//    List<Hotel> getHotelsHasRoomAvailable(String city, ZonedDateTime checkInDate, ZonedDateTime checkOutDate);
 }

@@ -19,9 +19,12 @@ import com.booking_hotel.api.role.entity.Role;
 import com.booking_hotel.api.role.repository.RoleRepository;
 import com.booking_hotel.api.utils.roleUtils.RoleUtils;
 import jakarta.mail.MessagingException;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -32,6 +35,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.*;
 
@@ -118,7 +122,7 @@ public class AuthController {
     }
 
     @PostMapping("/signin")
-    public ResponseEntity<AuthResponse> login(@RequestBody User user) throws Exception {
+    public ResponseEntity<AuthResponse> login(@RequestBody User user, HttpServletResponse response) throws Exception {
         // find user by username
         User existingUser = userRepository.findUserByUsername(user.getUsername());
 
@@ -180,13 +184,34 @@ public class AuthController {
         customUserDetails.setToken(jwt);
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(customUserDetails, null, customUserDetails.getAuthorities()));
 
+        // Tạo cookie
+        ResponseCookie accessCookie = ResponseCookie.from("access_token", jwt)
+                .httpOnly(false)
+                .secure(true)
+                .path("/")
+                .maxAge(Duration.ofDays(7))
+                .sameSite("Strict")
+                .build();
+
+        ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .path("/auth/refresh")
+                .maxAge(Duration.ofDays(7))
+                .sameSite("Strict")
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
         // Create response
-        AuthResponse response = AuthResponse.builder()
+        AuthResponse authResponse = AuthResponse.builder()
                 .accessToken(jwt)
                 .refreshToken(refreshToken)
                 .build();
 
-        return new ResponseEntity<>(response, HttpStatus.OK);
+
+        return new ResponseEntity<>(authResponse, HttpStatus.OK);
     }
 
     @PostMapping("/refresh-token")
@@ -263,9 +288,8 @@ public class AuthController {
     }
 
     @PostMapping("/signupBecomeOwner")
-    public ResponseEntity<?> signupBecomeOwner(@RequestHeader("Authorization") String accessToken) {
-        String token = accessToken.substring(7);
-        return ownerRequestService.signupBecomeOwner(token);
+    public ResponseEntity<?> signupBecomeOwner(@CookieValue("access_token") String accessToken) {
+        return ownerRequestService.signupBecomeOwner(accessToken);
     }
 
     @PostMapping("/approveOwner")

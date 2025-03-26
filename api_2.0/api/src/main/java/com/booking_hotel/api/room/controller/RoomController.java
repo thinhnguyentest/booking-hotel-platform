@@ -32,12 +32,6 @@ public class RoomController {
         return new ResponseEntity<>(RoomResponseUtils.buildRoomResponse(roomOptional.get()), HttpStatus.FOUND);
     }
 
-//    @GetMapping("/roomsAvailableByHotel")
-//    public ResponseEntity<List<RoomResponse>> getRoomByHotel(@RequestParam Long hotelId, @RequestParam String checkInDateStr,
-//                                                             @RequestParam String checkOutDateStr) {
-//        return new ResponseEntity<>(roomService.getRoomsAvailableByHotel(hotelId, checkInDateStr, checkOutDateStr), HttpStatus.CREATED);
-//    }
-
     @PostMapping
     public ResponseEntity<RoomResponse> createRoom(@RequestBody Room room, @RequestParam Long hotelId) {
         Room createdRoom = roomService.createRoom(room, hotelId);

@@ -13,11 +13,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import org.springframework.web.bind.annotation.*;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,15 +31,13 @@ public class HotelController {
     private final HotelService hotelService;
 
     @PostMapping("/createHotel")
-    public ResponseEntity<HotelResponse> createHotel(@RequestBody Hotel hotel, @RequestHeader("Authorization") String accessToken) {
-        String token = accessToken.substring(7);
-        return hotelService.createHotel(hotel, token);
+    public ResponseEntity<HotelResponse> createHotel(@RequestBody Hotel hotel, @CookieValue("access_token") String accessToken) {
+        return hotelService.createHotel(hotel, accessToken);
     }
 
     @PostMapping("/createHotels")
-    public ResponseEntity<List<HotelResponse>> createHotels(@RequestBody List<Hotel> hotels, @RequestHeader("Authorization") String accessToken) {
-        String token = accessToken.substring(7);
-        return hotelService.createHotels(hotels, token);
+    public ResponseEntity<List<HotelResponse>> createHotels(@RequestBody List<Hotel> hotels, @CookieValue("access_token") String accessToken) {
+        return hotelService.createHotels(hotels, accessToken);
     }
 
     @GetMapping
@@ -87,7 +87,9 @@ public class HotelController {
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String country,
             @RequestParam(required = false) Double maxPrice,
-            @RequestParam(required = false) Double minPrice
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss[XXX][X]") ZonedDateTime checkInDate,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss[XXX][X]") ZonedDateTime checkOutDate
     ) {
         Specification<Hotel> specification = Specification.where(null);
         if (name != null) {
@@ -104,6 +106,15 @@ public class HotelController {
         }
         if (minPrice != null) {
             specification = specification.and(HotelSpecifications.hasPriceGreaterThanOrEqual(minPrice));
+        }
+        // Xử lý logic ngày check-in/out
+        if (checkInDate != null && checkOutDate != null) {
+            if (checkOutDate.isBefore(checkInDate.plusDays(1))) {
+                throw new IllegalArgumentException("checkOutDate phải sau checkInDate ít nhất 1 ngày");
+            }
+            specification = specification.and(HotelSpecifications.hasAvailableRoomsBetweenDates(checkInDate, checkOutDate));
+        } else if (checkInDate != null || checkOutDate != null) {
+            throw new IllegalArgumentException("Phải cung cấp cả checkInDate và checkOutDate");
         }
         List<HotelResponse> hotelResponses = hotelService.searchHotelsWithSpecification(specification);
         return ResponseEntity.ok(hotelResponses);

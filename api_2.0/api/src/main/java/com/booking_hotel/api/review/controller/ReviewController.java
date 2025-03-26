@@ -32,9 +32,8 @@ public class ReviewController {
     private final UserService userService;
 
     @PostMapping
-    public ReviewResponse createReview(@RequestBody Review review, @RequestParam Long hotelId, @RequestHeader("Authorization") String accessToken) {
-        String token = accessToken.substring(7);
-        return reviewService.createReview(review, hotelId, token);
+    public ReviewResponse createReview(@RequestBody Review review, @RequestParam Long hotelId, @CookieValue("access_token") String accessToken) {
+        return reviewService.createReview(review, hotelId, accessToken);
     }
 
     @GetMapping("/{id}")
@@ -48,9 +47,8 @@ public class ReviewController {
     }
 
     @GetMapping("/userDetails")
-    public List<ReviewResponse> getReviewsByUser(@RequestHeader("Authorization") String accessToken) {
-        String token = accessToken.substring(7);
-        Optional<User> userOptional = userService.findByUsername(JwtProvider.getUserNameByToken(token));
+    public List<ReviewResponse> getReviewsByUser(@CookieValue("access_token") String accessToken) {
+        Optional<User> userOptional = userService.findByUsername(JwtProvider.getUserNameByToken(accessToken));
         if(userOptional.isEmpty()) {
             throw new ElementNotFoundException(USER_NOT_FOUND);
         }

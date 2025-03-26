@@ -57,10 +57,8 @@ public class HotelServiceImpl implements HotelService {
                     .owner(userOptional.get())
                     .build();
 
-
-            HotelResponse response = HotelResponseUtils.buildHotelResponse(hotel);
-
-            hotelRepository.save(newHotel);
+            Hotel hotelSaved = hotelRepository.save(newHotel);
+            HotelResponse response = HotelResponseUtils.buildHotelResponse(hotelSaved);
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         }
         throw new AccessDeniedException(ROLE_INVALID_MESSAGE);

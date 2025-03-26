@@ -37,9 +37,8 @@ public class BookingController {
     }
 
     @PostMapping
-    public ResponseEntity<BookingResponse> createBooking(@RequestBody Booking booking, @RequestHeader("Authorization") String accessToken, @RequestParam Long roomId) {
-        String token = accessToken.substring(7);
-        return new ResponseEntity<>(bookingService.createBooking(booking, token, roomId), HttpStatus.CREATED);
+    public ResponseEntity<BookingResponse> createBooking(@RequestBody Booking booking, @CookieValue("access_token") String accessToken, @RequestParam Long roomId) {
+        return new ResponseEntity<>(bookingService.createBooking(booking, accessToken, roomId), HttpStatus.CREATED);
     }
 
 

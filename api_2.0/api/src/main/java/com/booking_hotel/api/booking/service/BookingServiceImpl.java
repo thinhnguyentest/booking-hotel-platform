@@ -27,8 +27,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.DateTimeException;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -43,44 +45,56 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public Optional<BookingResponse> getBookingById(Long id) {
-        return Optional.of(BookingResponseUtils.buildBookingResponse(bookingRepository.findById(id).get()));
+        return bookingRepository.findById(id).map(BookingResponseUtils::buildBookingResponse);
     }
 
     @Override
     public BookingResponse createBooking(Booking booking, String token, Long roomId) {
-        if(booking.getCheckInDate().isAfter(booking.getCheckOutDate())){
+        bookingUtils.validateBookingDates(booking);
+        Room room = roomService.getRoomById(roomId).orElseThrow(() -> new ElementNotFoundException(NOT_FOUND_ROOM_MESSAGE));
+
+        if(!room.getIsAvailable()){
             throw new DateTimeException(DATE_INVALID_MESSAGE);
         }
-        Optional<Room> roomOptional = roomService.getRoomById(roomId);
-        if(roomOptional.isEmpty()){
-            throw new ElementNotFoundException(NOT_FOUND_ROOM_MESSAGE);
-        }
 
-        if(!bookingUtils.checkRoomAvailable(booking, roomId)) {
-            throw new ElementNotFoundException(NOT_AVAILABLE_ROOM_MESSAGE);
-        }
+        bookingUtils.validateRoomAvailability(room, booking.getCheckInDate(), booking.getCheckOutDate());
 
-        Optional<User> userOptional = userService.findByUsername(JwtProvider.getUserNameByToken(token));
-        if(userOptional.isEmpty()) {
-            throw new ElementNotFoundException(USER_NOT_FOUND);
-        }
-        Booking newBooking = Booking.builder()
-                .user(userOptional.get())
-                .room(roomOptional.get())
+        User user = userService.findByUsername(JwtProvider.getUserNameByToken(token))
+                .orElseThrow(() -> new ElementNotFoundException(USER_NOT_FOUND));
+
+        Booking newBooking = buildBooking(booking, user, room);
+        return BookingResponseUtils.buildBookingResponse(bookingRepository.save(newBooking));
+    }
+
+    @Override
+    public List<BookingResponse> getAllBookings() {
+        return bookingRepository.findAll().stream()
+                .map(BookingResponseUtils::buildBookingResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Scheduled(cron = "0 0 17 * * ?")
+    public void sendDailyBookingReport() {
+        hotelRepository.findAll().forEach(hotel -> {
+            List<Booking> bookings = bookingRepository.findByUser(hotel.getOwner());
+            userService.findByUsername(hotel.getOwner().getUsername()).ifPresent(owner ->
+                    emailService.sendDailyBookingReport(owner.getEmail(),
+                            "Daily Booking Report - " + DateUtils.now("dd-MM-yyyy HH:mm"),
+                            BookingResponseUtils.convertToBookingResponseList(bookings))
+            );
+        });
+    }
+
+    private Booking buildBooking(Booking booking, User user, Room room) {
+        return Booking.builder()
+                .user(user)
+                .room(room)
                 .checkInDate(booking.getCheckInDate())
                 .checkOutDate(booking.getCheckOutDate())
                 .totalPrice(booking.getTotalPrice())
                 .status("PENDING")
                 .build();
-
-        bookingRepository.save(newBooking);
-
-        return BookingResponseUtils.buildBookingResponse(newBooking);
-    }
-
-    @Override
-    public List<BookingResponse> getAllBookings() {
-        return BookingResponseUtils.convertToBookingResponseList(bookingRepository.findAll());
     }
 
     @Override
@@ -104,27 +118,4 @@ public class BookingServiceImpl implements BookingService {
         return BookingResponseUtils.convertToBookingResponseList(bookingRepository.findAll(specification));
     }
 
-    @Override
-    @Scheduled(cron = "0 0 17 * * ?") // Chạy mỗi ngày lúc
-    public void sendDailyBookingReport() {
-        List<Hotel> hotelList = hotelRepository.findAll();
-        for (Hotel hotel : hotelList) {
-            List<Booking> bookingList = bookingRepository.findByUser(hotel.getOwner());
-            Optional<User> ownerOptional = userService.findByUsername(hotel.getOwner().getUsername());
-            if (ownerOptional.isEmpty()) {
-                throw new ElementNotFoundException(USER_NOT_FOUND);
-            }
-
-            String ownerEmail = ownerOptional.get().getEmail(); // Thay bằng email của chủ khách sạn
-            String subject = "Daily Booking Report - " + DateUtils.now("dd-MM-yyyy HH:mm");
-            emailService.sendDailyBookingReport(ownerEmail, subject, BookingResponseUtils.convertToBookingResponseList(bookingList));
-        }
-    }
-
-    @Override
-    public List<BookingResponse> getBookingsByHotel(Long hotelId) {
-        Room room = roomRepository.findById(hotelId).get();
-        List<Booking> bookingList = bookingRepository.findByRoom(room);
-        return BookingResponseUtils.convertToBookingResponseList(bookingList);
-    }
 }

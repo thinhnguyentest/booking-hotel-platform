@@ -7,6 +7,7 @@ import com.booking_hotel.api.hotel.entity.Hotel;
 import com.booking_hotel.api.room.dto.RoomResponse;
 import com.booking_hotel.api.room.entity.Room;
 
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +23,7 @@ public class RoomResponseUtils {
                 .price(room.getPrice())
                 .isAvailable(room.getIsAvailable())
                 .hotelResponse(hotelResponse)
+                .unAvailableDates(room.getUnAvailableDates())
                 .build();
     }
 

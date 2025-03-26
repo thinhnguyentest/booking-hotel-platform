@@ -11,6 +11,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.ZonedDateTime;
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -27,4 +30,6 @@ public class RoomResponse {
     private Double price;
 
     private Boolean isAvailable;
+
+    private List<ZonedDateTime> unAvailableDates;
 }

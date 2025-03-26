@@ -29,6 +29,7 @@ public class AppConfig {
                         .requestMatchers("/api/rooms/**").permitAll()
                         .requestMatchers("/api/bookings/**").permitAll()
                         .requestMatchers("/api/images/**").permitAll()
+                        .requestMatchers("/api/reviews/**").permitAll()
                         .requestMatchers("/api/amenities/**").permitAll()
                         .requestMatchers("/api/payments/**").permitAll()
                         .requestMatchers("/static/**").permitAll()

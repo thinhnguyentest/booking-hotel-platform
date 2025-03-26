@@ -48,14 +48,13 @@ public class RoomServiceImpl implements RoomService {
         }
 
         Room newRoom = Room.builder()
-                .roomId(room.getRoomId())
                 .roomNumber(room.getRoomNumber())
                 .roomType(room.getRoomType())
                 .price(room.getPrice())
                 .hotel(hotelOptional.get())
-                .isAvailable(room.getIsAvailable())
+                .unAvailableDates(room.getUnAvailableDates())
                 .build();
-        roomRepository.save(newRoom);
+        newRoom = roomRepository.save(newRoom);
 
         List<Room> rooms = roomRepository.findByHotel(hotelOptional.get());
         Double minPrice = rooms.stream()

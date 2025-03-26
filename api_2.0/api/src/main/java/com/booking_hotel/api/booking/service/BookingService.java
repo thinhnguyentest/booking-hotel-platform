@@ -16,5 +16,4 @@ public interface BookingService {
     void deleteBooking(Long id);
     List<BookingResponse> searchBookings(Specification<Booking> specification);
     void sendDailyBookingReport();
-    List<BookingResponse> getBookingsByHotel(Long hotelId);
 }

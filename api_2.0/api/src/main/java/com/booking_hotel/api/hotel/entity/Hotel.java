@@ -1,6 +1,7 @@
 package com.booking_hotel.api.hotel.entity;
 
 import com.booking_hotel.api.auth.entity.User;
+import com.booking_hotel.api.room.entity.Room;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -13,6 +14,8 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Builder
 @Data
@@ -45,6 +48,10 @@ public class Hotel {
     private Double cheapestPrice;
 
     private Double rating;
+
+    @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<Room> rooms = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "owner_id", nullable = false)
