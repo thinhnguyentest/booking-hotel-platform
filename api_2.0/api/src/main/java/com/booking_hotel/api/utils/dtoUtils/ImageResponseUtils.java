@@ -12,7 +12,6 @@ public class ImageResponseUtils {
         return ImageResponse.builder()
                 .imageId(image.getImageId())
                 .imageUrl(image.getImageUrl())
-                .roomResponse(RoomResponseUtils.buildRoomResponse(image.getRoom()))
                 .build();
     }
 

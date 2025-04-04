@@ -19,6 +19,7 @@ import com.booking_hotel.api.room.service.RoomService;
 import com.booking_hotel.api.utils.bookingUtils.BookingUtils;
 import com.booking_hotel.api.utils.dateUtils.DateUtils;
 import com.booking_hotel.api.utils.dtoUtils.BookingResponseUtils;
+import jakarta.persistence.PersistenceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
@@ -28,6 +29,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.DateTimeException;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -49,6 +51,23 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    public List<BookingResponse> getBookingByUser(String token) {
+        User user = userService.findByUsername(JwtProvider.getUserNameByToken(token))
+                .orElseThrow(() -> new ElementNotFoundException(USER_NOT_FOUND));
+
+        List<Booking> bookingList = bookingRepository.findByUser(user);
+        return BookingResponseUtils.convertToBookingResponseList(bookingList);
+    }
+
+    @Override
+    public List<BookingResponse> getBookingsByUserId(Long userId) {
+        List<Booking> bookingList = bookingRepository.findAll();
+        return BookingResponseUtils.convertToBookingResponseList(bookingList.stream()
+                .filter(booking -> booking.getUser().getUserId() == userId)
+                .toList());
+    }
+
+    @Override
     public BookingResponse createBooking(Booking booking, String token, Long roomId) {
         bookingUtils.validateBookingDates(booking);
         Room room = roomService.getRoomById(roomId).orElseThrow(() -> new ElementNotFoundException(NOT_FOUND_ROOM_MESSAGE));
@@ -63,6 +82,29 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new ElementNotFoundException(USER_NOT_FOUND));
 
         Booking newBooking = buildBooking(booking, user, room);
+
+        try {
+            bookingRepository.save(newBooking);
+            List<ZonedDateTime> newUnAvailableDates = new ArrayList<>();
+
+            // Generate dates between check-in and check-out
+            ZonedDateTime startDate = booking.getCheckInDate();
+            ZonedDateTime endDate = booking.getCheckOutDate();
+
+            while (!startDate.isAfter(endDate)) {
+                newUnAvailableDates.add(startDate);
+                startDate = startDate.plusDays(1);
+            }
+
+            // Update room's unavailable dates
+            if (room.getUnAvailableDates() == null) {
+                room.setUnAvailableDates(new ArrayList<>());
+            }
+            room.getUnAvailableDates().addAll(newUnAvailableDates);
+            roomRepository.save(room);
+        } catch (Exception e) {
+            throw new PersistenceException("Error saving booking", e);
+        }
         return BookingResponseUtils.buildBookingResponse(bookingRepository.save(newBooking));
     }
 

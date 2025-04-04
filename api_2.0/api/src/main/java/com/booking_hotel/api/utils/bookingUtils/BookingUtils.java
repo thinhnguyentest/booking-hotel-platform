@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.booking_hotel.api.utils.messageUtils.MessageUtils.DATE_INVALID_MESSAGE;
+import static com.booking_hotel.api.utils.messageUtils.MessageUtils.NOT_AVAILABLE_ROOM_MESSAGE;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +34,6 @@ public class BookingUtils {
                 .anyMatch(date -> date.equals(checkInDate) ||
                         (date.isAfter(checkInDate) && date.isBefore(checkOutDate)));
 
-        if (isConflict) throw new DateTimeException(DATE_INVALID_MESSAGE);
+        if (isConflict) throw new DateTimeException(NOT_AVAILABLE_ROOM_MESSAGE);
     }
 }

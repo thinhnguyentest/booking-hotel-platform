@@ -112,30 +112,4 @@ public class RoomServiceImpl implements RoomService {
         return roomRepository.findAll(specification);
     }
 
-
-//    @Override
-//    public List<RoomResponse> getRoomsAvailableByHotel(Long hotelId, String checkInDateStr, String checkOutDateStr) {
-//
-//        Optional<Hotel> hotelOptional = hotelService.getHotelById(hotelId);
-//        ZonedDateTime checkInDate = ZonedDateTime.parse(checkInDateStr);
-//        ZonedDateTime checkOutDate = ZonedDateTime.parse(checkOutDateStr);
-//
-//        if(hotelOptional.isEmpty()) {
-//            throw new ElementNotFoundException(MessageUtils.NOT_FOUND_HOTEL_MESSAGE);
-//        }
-//
-//        List<Room> rooms = roomRepository.findByHotel(hotelOptional.get());
-//
-//        List<BookingResponse> bookingResponseList = bookingService.getBookingsByHotel(hotelId);
-//
-//        List<Room> roomsAvailable = new ArrayList<>();
-//
-//        for(Room room : rooms) {
-//            if(HotelUtils.checkRoomAvailability(bookingResponseList, room, checkInDate, checkOutDate)){
-//                roomsAvailable.add(room);
-//            }
-//        }
-//
-//        return RoomResponseUtils.convertToBookingResponseList(roomsAvailable);
-//    }
 }

@@ -33,11 +33,25 @@ public class BookingController {
         if (bookingOptional.isEmpty()) {
             throw new ElementNotFoundException(MessageUtils.NOT_FOUND_BOOKING_MESSAGE);
         }
-        return new ResponseEntity<>(bookingOptional.get(), HttpStatus.FOUND);
+        return new ResponseEntity<>(bookingOptional.get(), HttpStatus.OK);
+    }
+
+    @GetMapping("/booking-by-user")
+    public ResponseEntity<List<BookingResponse>> getBookingByUser(@CookieValue("access_token") String accessToken) {
+        List<BookingResponse> bookingResponseList = bookingService.getBookingByUser(accessToken);
+        return new ResponseEntity<>(bookingResponseList, HttpStatus.OK);
+    }
+
+    @GetMapping("/booking-by-userId/{userId}")
+    public ResponseEntity<List<BookingResponse>> getBookingsByUserId(@PathVariable Long userId) {
+        List<BookingResponse> bookingResponseList = bookingService.getBookingsByUserId(userId);
+        return new ResponseEntity<>(bookingResponseList, HttpStatus.OK);
     }
 
     @PostMapping
-    public ResponseEntity<BookingResponse> createBooking(@RequestBody Booking booking, @CookieValue("access_token") String accessToken, @RequestParam Long roomId) {
+    public ResponseEntity<BookingResponse> createBooking(@RequestBody Booking booking
+                                                        , @CookieValue("access_token") String accessToken
+                                                        , @RequestParam Long roomId) {
         return new ResponseEntity<>(bookingService.createBooking(booking, accessToken, roomId), HttpStatus.CREATED);
     }
 

@@ -58,14 +58,14 @@ public class HotelController {
         return hotelService.countByCity();
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<HotelResponse> getHotelById(@PathVariable Long id) {
-        Optional<Hotel> hotelOptional= hotelService.getHotelById(id);
+    @GetMapping("/{hotelId}")
+    public ResponseEntity<HotelResponse> getHotelById(@PathVariable Long hotelId) {
+        Optional<Hotel> hotelOptional= hotelService.getHotelById(hotelId);
         if (hotelOptional.isEmpty()) {
             throw new ElementNotFoundException(NOT_FOUND_HOTEL_MESSAGE);
         }
         HotelResponse response = HotelResponseUtils.buildHotelResponse(hotelOptional.get());
-        return new ResponseEntity<>(response, HttpStatus.FOUND);
+        return new ResponseEntity<>(response, HttpStatus.OK);
 
     }
 

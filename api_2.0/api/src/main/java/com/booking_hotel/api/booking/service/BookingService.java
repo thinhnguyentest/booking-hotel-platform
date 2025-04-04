@@ -10,6 +10,8 @@ import java.util.Optional;
 
 public interface BookingService {
     Optional<BookingResponse> getBookingById(Long id);
+    List<BookingResponse> getBookingByUser(String token);
+    List<BookingResponse> getBookingsByUserId(Long userId);
     BookingResponse createBooking(Booking Booking, String token, Long roomId);
     List<BookingResponse> getAllBookings();
     BookingResponse updateBooking(Long id, Booking updatedBooking);

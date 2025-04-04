@@ -16,42 +16,20 @@
     public class PaymentController {
         private final PaymentService paymentService;
 
+        @PostMapping("/webhook")
+        public ResponseEntity<String> handleWebhook(
+                @RequestBody String payload,
+                @RequestHeader("Stripe-Signature") String sigHeader) {
+
+            return paymentService.handleStripeWebhook(payload, sigHeader);
+        }
+
         @PostMapping("/checkout")
-        public ResponseEntity<StripeResponse> checkoutProducts(@RequestParam Long paymentId,  @CookieValue("access_token") String accessToken) {
-            StripeResponse stripeResponse = paymentService.checkoutBooking(paymentId, accessToken);
+        public ResponseEntity<StripeResponse> checkoutProducts(@RequestParam Long bookingId,  @CookieValue("access_token") String accessToken) {
+            StripeResponse stripeResponse = paymentService.checkoutBooking(bookingId, accessToken);
             return ResponseEntity
                     .status(HttpStatus.OK)
                     .body(stripeResponse);
-        }
-
-        @PostMapping("/checkout/success")
-        public ResponseEntity<?> confirmCheckout(@RequestParam Long paymentId) {
-            paymentService.confirmPayment(paymentId);
-            return ResponseEntity.status(HttpStatus.OK).build();
-        }
-
-        @PostMapping("/checkout/cancel")
-        public ResponseEntity<?> cancelCheckout(@RequestParam Long paymentId) {
-            paymentService.cancelPayment(paymentId);
-            return ResponseEntity.status(HttpStatus.OK).build();
-        }
-
-        @PostMapping()
-        public ResponseEntity<PaymentResponse> createPayment(@RequestParam Long bookingId, @RequestBody Payment payment) {
-
-            PaymentResponse paymentResponse = paymentService.createPayment(bookingId, payment);
-            return ResponseEntity
-                    .status(HttpStatus.OK)
-                    .body(paymentResponse);
-        }
-
-        @GetMapping()
-        public ResponseEntity<PaymentResponse> getPayment(@RequestParam Long paymentId) {
-
-            Payment payment = paymentService.getPayment(paymentId);
-            return ResponseEntity
-                    .status(HttpStatus.OK)
-                    .body(PaymentResponseUtils.buildImageResponse(payment));
         }
 
     }

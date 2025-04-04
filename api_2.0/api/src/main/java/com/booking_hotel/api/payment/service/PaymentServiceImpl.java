@@ -14,12 +14,18 @@ import com.booking_hotel.api.payment.repository.PaymentRepository;
 import com.booking_hotel.api.utils.dtoUtils.BookingResponseUtils;
 import com.booking_hotel.api.utils.dtoUtils.PaymentResponseUtils;
 import com.booking_hotel.api.utils.messageUtils.MessageUtils;
+import com.google.gson.JsonSyntaxException;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
+import com.stripe.model.Event;
+import com.stripe.model.PaymentIntent;
 import com.stripe.model.checkout.Session;
+import com.stripe.net.Webhook;
+import com.stripe.param.PaymentIntentCreateParams;
 import com.stripe.param.checkout.SessionCreateParams;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -39,58 +45,35 @@ public class PaymentServiceImpl implements PaymentService {
     @Value("${stripe.api.key}")
     private String secretKey;
 
-    @Override
-    public PaymentResponse createPayment(Long bookingId, Payment payment) {
-        Optional<Booking> booking = bookingRepository.findById(bookingId);
-        if(booking.isEmpty()) {
-            throw new ElementNotFoundException(MessageUtils.NOT_FOUND_BOOKING_MESSAGE);
-        }
-
-        Payment newPayment = Payment.builder()
-                                    .amount(BigDecimal.valueOf(booking.get().getTotalPrice()))
-                                    .paymentMethod(payment.getPaymentMethod())
-                                    .paymentStatus(payment.getPaymentStatus() == null ? PENDING_BOOKING_STATUS : payment.getPaymentStatus())
-                                    .booking(booking.get())
-                                    .build();
-
-        paymentRepository.save(newPayment);
-        return PaymentResponseUtils.buildImageResponse(newPayment);
-    }
+    @Value("${stripe.webhook.secret}")
+    private String webhookSecret;
 
     @Override
-    public Payment getPayment(Long id) {
-        return paymentRepository.findById(id).orElseThrow(() -> new RuntimeException(NOT_FOUND_PAYMENT_MESSAGE));
-    }
-
-    @Override
-    public StripeResponse checkoutBooking(Long paymentId, String token) {
+    public StripeResponse checkoutBooking(Long bookingId, String token) {
         Stripe.apiKey = secretKey;
         Optional<User> user = userService.findByUsername(JwtProvider.getUserNameByToken(token));
         if(user.isEmpty()) {
             throw new ElementNotFoundException(USER_NOT_FOUND);
         }
-        Optional<Payment> paymentOptional = paymentRepository.findById(paymentId);
-        if(paymentOptional.isEmpty()) {
-            throw new ElementNotFoundException(NOT_FOUND_PAYMENT_MESSAGE);
+        Optional<Booking> bookingOptional = bookingRepository.findById(bookingId);
+        if(bookingOptional.isEmpty()) {
+            throw new ElementNotFoundException(NOT_FOUND_BOOKING_MESSAGE);
         }
 
-        Payment newPayment = paymentOptional.get();
+        Booking newBooking = bookingOptional.get();
 
-        // Create a PaymentIntent with the order amount and currency
         SessionCreateParams.LineItem.PriceData.ProductData productData =
                 SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                        .setName(newPayment.getBooking().getRoom().getHotel().getName())
+                        .setName(newBooking.getRoom().getHotel().getName())
                         .build();
 
-        // Create new line item with the above product data and associated price
         SessionCreateParams.LineItem.PriceData priceData =
                 SessionCreateParams.LineItem.PriceData.builder()
                         .setCurrency("USD")
-                        .setUnitAmount(newPayment.getAmount().multiply(BigDecimal.valueOf(100)).longValue())
+                        .setUnitAmount((long)(newBooking.getTotalPrice() * 100))
                         .setProductData(productData)
                         .build();
 
-        // Create new line item with the above price data
         SessionCreateParams.LineItem lineItem =
                 SessionCreateParams
                         .LineItem.builder()
@@ -98,12 +81,12 @@ public class PaymentServiceImpl implements PaymentService {
                         .setPriceData(priceData)
                         .build();
 
-        // Create new session with the line items
         SessionCreateParams params =
                 SessionCreateParams.builder()
+                        .putMetadata("bookingId", bookingId.toString())
                         .setMode(SessionCreateParams.Mode.PAYMENT)
-                        .setSuccessUrl("http://localhost:8080/api/payments/checkout/success?paymentId="+paymentId)
-                        .setCancelUrl("http://localhost:8080/api/payements/checkout/cancel?paymentId="+paymentId)
+                        .setSuccessUrl("http://localhost:3000/checkout/success?bookingId=" + bookingId)
+                        .setCancelUrl("http://localhost:3000/checkout/cancel?bookingId=" + bookingId)
                         .addLineItem(lineItem)
                         .build();
 
@@ -115,24 +98,6 @@ public class PaymentServiceImpl implements PaymentService {
             throw new RuntimeException();
         }
 
-        // send email
-        String paymentLink = session.getUrl();
-        try {
-            emailService.sendEmailPayment(user.get().getEmail(),
-                    PAYMENT_SUBJECT_MESSAGE + "\n ", PAYMENT_MESSAGE + paymentLink);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        // change status booking after pay
-        Booking paymentBooking = newPayment.getBooking();
-        paymentBooking.setStatus(COMPLETED_BOOKING_STATUS);
-        bookingRepository.save(paymentBooking);
-
-        // change status payment after pay
-        newPayment.setPaymentStatus(CONFIRMED_BOOKING_STATUS);
-        paymentRepository.save(newPayment);
-
         return StripeResponse
                 .builder()
                 .status(PAYMENT_SUCCESS_STATUS)
@@ -143,40 +108,62 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public void confirmPayment(Long paymentId) {
-        Optional<Payment> paymentOptional = paymentRepository.findById(paymentId);
-        if(paymentOptional.isEmpty()) {
-            throw new ElementNotFoundException(NOT_FOUND_PAYMENT_MESSAGE);
+    public ResponseEntity<String> handleStripeWebhook(String payload, String sigHeader) {
+        try {
+            Event event = Webhook.constructEvent(
+                    payload,
+                    sigHeader,
+                    webhookSecret
+            );
+
+            switch (event.getType()) {
+                case "checkout.session.completed":
+                    confirmPayment(event);
+                    break;
+                case "checkout.session.expired":
+                case "checkout.session.async_payment_failed":
+                    cancelPayment(event);
+                    break;
+                default:
+                    return ResponseEntity.ok().build();
+            }
+
+            return ResponseEntity.ok("Webhook processed");
+        } catch (StripeException | JsonSyntaxException e) {
+            return ResponseEntity.badRequest().body("Invalid payload");
         }
-        Payment newPayment = paymentOptional.get();
+    }
+
+    public void confirmPayment(Event event) throws StripeException {
+        Session session = (Session) event.getData().getObject();
+        Long bookingId = Long.parseLong(session.getMetadata().get("bookingId"));
+        Optional<Booking> bookingOptional = bookingRepository.findById(bookingId);
+        if(bookingOptional.isEmpty()) {
+            throw new ElementNotFoundException(NOT_FOUND_BOOKING_MESSAGE);
+        }
         // change status booking after pay
-        Booking paymentBooking = newPayment.getBooking();
+        Booking paymentBooking = bookingOptional.get();
         paymentBooking.setStatus(COMPLETED_BOOKING_STATUS);
         String userEmailConfirmedBooking = paymentBooking.getUser().getEmail();
         emailService.sendEmailbookingConfirmed(userEmailConfirmedBooking, SUBJECT_BOOKING_MESSAGE, BookingResponseUtils.buildBookingResponse(paymentBooking));
-
         bookingRepository.save(paymentBooking);
 
-        // change status payment after pay
-        newPayment.setPaymentStatus(CONFIRMED_BOOKING_STATUS);
-        paymentRepository.save(newPayment);
+        paymentBooking.setStatus(COMPLETED_BOOKING_STATUS);
+        bookingRepository.save(paymentBooking);
     }
 
-    @Override
-    public void cancelPayment(Long paymentId) {
-        Optional<Payment> paymentOptional = paymentRepository.findById(paymentId);
-        if(paymentOptional.isEmpty()) {
+    public void cancelPayment(Event event) {
+        Session session = (Session) event.getData().getObject();
+        Long bookingId = Long.parseLong(session.getMetadata().get("bookingId"));
+        Optional<Booking> bookingOptional = bookingRepository.findById(bookingId);
+        if(bookingOptional.isEmpty()) {
             throw new ElementNotFoundException(NOT_FOUND_PAYMENT_MESSAGE);
         }
-        Payment newPayment = paymentOptional.get();
         // change status booking after pay
-        Booking paymentBooking = newPayment.getBooking();
+        Booking paymentBooking = bookingOptional.get();
         paymentBooking.setStatus(PENDING_BOOKING_STATUS);
         bookingRepository.save(paymentBooking);
 
-        // change status payment after pay
-        newPayment.setPaymentStatus(PENDING_BOOKING_STATUS);
-        paymentRepository.save(newPayment);
     }
 }
 

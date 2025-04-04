@@ -5,8 +5,7 @@ import com.booking_hotel.api.hotel.entity.Hotel;
 
 public class HotelResponseUtils {
     public static HotelResponse buildHotelResponse(Hotel hotel) {
-        System.out.println("hotelId >> " + hotel.getHotelId());
-        HotelResponse response = HotelResponse.builder()
+        return HotelResponse.builder()
                 .id(hotel.getHotelId())
                 .name(hotel.getName())
                 .city(hotel.getCity())
@@ -17,6 +16,5 @@ public class HotelResponseUtils {
                 .photos(hotel.getPhotos())
                 .rating(hotel.getRating())
                 .build();
-        return response;
     }
 }

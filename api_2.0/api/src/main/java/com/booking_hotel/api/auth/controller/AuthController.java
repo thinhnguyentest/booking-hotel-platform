@@ -306,5 +306,14 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/banUser")
+    public ResponseEntity<?> banUser(@RequestParam Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(()
+                -> new ElementNotFoundException(USER_NOT_FOUND));
+        user.setBanned(true);
+        userRepository.save(user);
+        return ResponseEntity.noContent().build();
+    }
+
 
 }

@@ -29,7 +29,7 @@ public class RoomController {
         if (roomOptional.isEmpty()) {
             throw new ElementNotFoundException(MessageUtils.NOT_FOUND_ROOM_MESSAGE);
         }
-        return new ResponseEntity<>(RoomResponseUtils.buildRoomResponse(roomOptional.get()), HttpStatus.FOUND);
+        return new ResponseEntity<>(RoomResponseUtils.buildRoomResponse(roomOptional.get()), HttpStatus.OK);
     }
 
     @PostMapping
