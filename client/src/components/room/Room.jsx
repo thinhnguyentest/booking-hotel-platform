@@ -13,7 +13,7 @@ const Room = ({ room }) => {
   const [messageApi, contextHolder] = message.useMessage();
   const [error, setError] = useState(null);
   const [open, setOpen] = useState(false);
-  const { data: dataImg, loading } = useFetch(`/images/imageByRoom?roomId=${room?.roomId || 5}`)
+  const { data: dataImg, loading } = useFetch(`${process.env.REACT_APP_API_URL}/images/imageByRoom?roomId=${room?.roomId || 5}`)
 
   const errorSearch = useCallback((message) => {
     messageApi.open({

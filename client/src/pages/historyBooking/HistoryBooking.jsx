@@ -22,7 +22,7 @@ const BookingHistory = () => {
         search: ''
     });
     const [processedData, setProcessedData] = useState([]);
-    const { data: dataBookingHistory, loading, error } = useFetch(`/bookings/booking-by-user`);
+    const { data: dataBookingHistory, loading, error } = useFetch(`${process.env.REACT_APP_API_URL}/bookings/booking-by-user`);
 
     // Thêm logic reset trang khi filter thay đổi
     useEffect(() => {

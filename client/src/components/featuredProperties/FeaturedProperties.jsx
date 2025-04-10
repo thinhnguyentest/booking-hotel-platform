@@ -4,8 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 const FeaturedProperties = () => {
   const navigate = useNavigate();
-  const { data, loading } = useFetch("/hotels/limit?limit=4");
-
+  const { data = [], loading } = useFetch(`${process.env.REACT_APP_API_URL}/hotels/limit?limit=4`);
   const handleClick = (hotelId) => {
     navigate(`/hotels/${hotelId}`);
   };
@@ -16,7 +15,7 @@ const FeaturedProperties = () => {
         <div className="loading-text">Loading...</div>
       ) : (
         <>
-          {data.map((item, index) => (
+          {data?.map((item, index) => (
             <div
               className="fpItem"
               key={item.id || index}

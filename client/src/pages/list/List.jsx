@@ -37,7 +37,7 @@ const List = () => {
 
   // Fetch dữ liệu
   const { data, loading, error } = useFetch(
-    `/hotels/search?name=${name || ''}&city=${city || ''}&checkInDate=${dates[0]?.startDate || ''}&checkOutDate=${dates[0]?.endDate || ''}&minPrice=${minPrice || 0}&maxPrice=${maxPrice || 9999999}`
+    `${process.env.REACT_APP_API_URL}/hotels/search?name=${name || ''}&city=${city || ''}&checkInDate=${dates[0]?.startDate || ''}&checkOutDate=${dates[0]?.endDate || ''}&minPrice=${minPrice || 0}&maxPrice=${maxPrice || 9999999}`
   );
 
   const currentItems = data?.slice(indexOfFirstItem, indexOfLastItem) || [];

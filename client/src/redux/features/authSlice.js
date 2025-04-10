@@ -8,7 +8,7 @@ export const register = createAsyncThunk(
   'auth/register',
   async (credentials, { rejectWithValue }) => {
     try {
-      await axios.post('/auth/signup', credentials);
+      await axios.post(`${process.env.REACT_APP_API_URL}/auth/signup`, credentials);
       return true;
       // Giả định API trả về user data trong response.data.user
     } catch (error) {
@@ -22,7 +22,7 @@ export const login = createAsyncThunk(
   'auth/login',
   async (credentials, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/auth/signin', credentials, {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/signin`, credentials, {
         withCredentials: true // Thêm credentials
       });
       return response.data; // Giữ nguyên nếu dùng token từ body

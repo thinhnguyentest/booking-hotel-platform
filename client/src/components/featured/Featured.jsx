@@ -9,7 +9,7 @@ import { newSearch } from "../../redux/features/searchSlice";
 const Featured = () => {
   const navigate = useNavigate();
   const [countByCityMap, setCountByCityMap] = useState({ 'Da Nang': 0 });
-  const { data, loading } = useFetch("/hotels/countByCity");
+  const { data, loading } = useFetch(`${process.env.REACT_APP_API_URL}/hotels/countByCity`);
   const dispatch = useDispatch();
 
   const images = [

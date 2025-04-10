@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { MDBContainer, MDBInput, MDBBtn, MDBIcon } from 'mdb-react-ui-kit';
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 import './forgotPassword.css';
 
 const ForgotPassword = () => {
@@ -9,7 +8,6 @@ const ForgotPassword = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
-    const navigate = useNavigate();
 
     const handleChange = (e) => {
         setEmail(e.target.value);
@@ -25,7 +23,7 @@ const ForgotPassword = () => {
         
         setLoading(true);
         try {
-            await axios.post(`/auth/forgotPassword?email=${email}`);
+            await axios.post(`${process.env.REACT_APP_API_URL}/auth/forgotPassword?email=${email}`);
             setSuccessMessage('Password reset link has been sent to your email');
         } catch (err) {
             setError(err.response?.data?.message || 'User not found');

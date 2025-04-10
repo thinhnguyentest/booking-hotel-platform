@@ -24,7 +24,7 @@ const ResetPassword = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            await axios.post('/auth/resetPassword', resetPasswordRequest);
+            await axios.post(`${process.env.REACT_APP_API_URL}/auth/resetPassword`, resetPasswordRequest);
             setSuccessMessage('Password reset successfully');
             setError(null);
             setTimeout(() => navigate('/login'), 1500);

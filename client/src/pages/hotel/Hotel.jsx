@@ -13,12 +13,12 @@ const Hotel = () => {
   
   const location = useLocation();
   const hotelId  = location.pathname.split('/')[2];
-  const { data, loading } = useFetch(`/rooms/search?hotelId=${hotelId || ''}`);
+  const { data, loading } = useFetch(`${process.env.REACT_APP_API_URL}/rooms/search?hotelId=${hotelId || ''}`);
   const [reviews, setReviews] = useState([]);
 
   useEffect(() => {
     const fetchReviews = async () => {
-      const response = await fetch(`/reviews/hotelDetails?hotelId=${hotelId}`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/reviews/hotelDetails?hotelId=${hotelId}`);
       const data = await response.json();
       setReviews(data);
     };
