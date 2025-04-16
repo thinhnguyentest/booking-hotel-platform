@@ -8,6 +8,7 @@ import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,10 +27,18 @@ public class JwtTokenValidator extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        String jwt = request.getHeader(JwtConstant.JWT_HEADER);
+        String jwt = null;
 
-        if (jwt != null && jwt.startsWith("Bearer ")) {
-            jwt = jwt.substring(7); // Loại bỏ "Bearer "
+        // Lấy token từ cookie
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                System.out.println("cookie >> " + cookie.getName());
+                if ("access_token".equals(cookie.getName())) { // Thay thế bằng tên cookie của bạn
+                    jwt = cookie.getValue();
+                    break;
+                }
+            }
         }
 
         try {
@@ -56,5 +65,4 @@ public class JwtTokenValidator extends OncePerRequestFilter {
 
         filterChain.doFilter(request, response);
     }
-
 }

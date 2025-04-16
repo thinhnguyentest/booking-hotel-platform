@@ -18,8 +18,6 @@ public class AmenityController {
 
     private final AmenityService amenityService;
 
-    private final HotelService hotelService;
-
     @GetMapping
     public List<AmenityResponse> getAllAmenities() {
         return amenityService.getAllAmenities();

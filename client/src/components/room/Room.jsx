@@ -47,22 +47,37 @@ const Room = ({ room }) => {
   const days = dayDifference(endDate, startDate);
   const handleCreateBooking = async () => {
     try {
-      const resBooking = await axios.post(`/bookings?roomId=${room?.roomId}`, {
-        checkInDate: decodeURIComponent(dates[0]?.startDate),
-        checkOutDate: decodeURIComponent(dates[0]?.endDate),
-        totalPrice: (days || 1) * (room?.price)
-      })
-      const newBooking = resBooking?.data;
-      const resPayment = await axios.post(`/payments/checkout?bookingId=${newBooking?.bookingId}`);
-      const paymentUrl = resPayment?.data?.sessionUrl;
-      if (paymentUrl) {
-        window.location.href = paymentUrl;
-      }
-      setError('');
+        const resBooking = await axios.post(
+            `${process.env.REACT_APP_API_URL}/bookings?roomId=${room?.roomId}`, 
+            {
+                checkInDate: decodeURIComponent(dates[0]?.startDate),
+                checkOutDate: decodeURIComponent(dates[0]?.endDate),
+                totalPrice: (days || 1) * (room?.price)
+            },
+            {
+                withCredentials: true // Thêm dòng này để gửi cookie
+            }
+        );
+
+        const newBooking = resBooking?.data;
+        const resPayment = await axios.post(
+            `${process.env.REACT_APP_API_URL}/payments/checkout?bookingId=${newBooking?.bookingId}`,
+            {},
+            {
+                withCredentials: true // Thêm dòng này để gửi cookie
+            }
+        );
+
+        const paymentUrl = resPayment?.data?.sessionUrl;
+        if (paymentUrl) {
+            window.location.href = paymentUrl;
+        }
+        setError('');
     } catch (error) {
-      setError(error.response?.data?.errors?.[0] || 'Please select check-in and check-out date');
+        setError(error.response?.data?.errors?.[0] || 'Please select check-in and check-out date');
     }
-  }
+}
+
 
   const handleMove = (direction) => {
     let newSlideNumber;

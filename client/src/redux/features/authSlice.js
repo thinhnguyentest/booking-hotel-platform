@@ -23,9 +23,9 @@ export const login = createAsyncThunk(
   async (credentials, { rejectWithValue }) => {
     try {
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/signin`, credentials, {
-        withCredentials: true // Thêm credentials
+        withCredentials: true 
       });
-      return response.data; // Giữ nguyên nếu dùng token từ body
+      return response.data; 
     } catch (error) {
       return rejectWithValue(error.response.data.errors[0] || 'Đăng nhập thất bại');
     }
@@ -35,8 +35,7 @@ export const login = createAsyncThunk(
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    user: JSON.stringify(Cookies.get('access_token')) || null, // Đọc từ cookie
-    loading: false,
+    user: JSON.stringify(Cookies.get('access_token')) || null, 
     error: null
   },
   reducers: {
@@ -49,10 +48,9 @@ const authSlice = createSlice({
     builder
       .addCase(login.fulfilled, (state, action) => {
         state.user = action.payload.accessToken;
-        console.log('access_token >> ', Cookies.get('access_token'))
         if(Cookies.get('access_token') == null) {
           Cookies.set('access_token', JSON.stringify(action.payload.accessToken), { 
-            expires: 7, // 7 ngày
+            expires: 7, 
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict'
           });

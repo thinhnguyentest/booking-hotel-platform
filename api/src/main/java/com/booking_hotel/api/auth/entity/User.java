@@ -3,6 +3,8 @@ package com.booking_hotel.api.auth.entity;
 import com.booking_hotel.api.role.entity.Role;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
@@ -11,6 +13,8 @@ import java.time.ZonedDateTime;
 import java.util.Set;
 
 @Data
+@Builder
+@AllArgsConstructor
 @Entity
 @NoArgsConstructor
 @Table(name = "Users")
