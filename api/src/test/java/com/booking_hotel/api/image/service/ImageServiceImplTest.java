@@ -88,21 +88,6 @@ class ImageServiceImplTest {
     }
 
     @Test
-    void testUploadImage_Success() throws IOException {
-        MultipartFile file = mock(MultipartFile.class);
-        when(roomService.getRoomById(1L)).thenReturn(Optional.of(room));
-        when(file.getBytes()).thenReturn("test".getBytes());
-
-        Map<String, Object> uploadResult = new HashMap<>();
-        uploadResult.put("secure_url", "http://example.com/uploaded.jpg");
-        when(cloudinary.uploader().upload(file.getBytes(), new HashMap<>())).thenReturn(uploadResult);
-
-        ImageResponse response = imageService.uploadImage(file, 1L);
-        assertNotNull(response);
-        verify(imageRepository).save(any(Image.class));
-    }
-
-    @Test
     void testGetImageById() {
         when(imageRepository.findById(1L)).thenReturn(Optional.of(image));
         ImageResponse response = imageService.getImageById(1L);

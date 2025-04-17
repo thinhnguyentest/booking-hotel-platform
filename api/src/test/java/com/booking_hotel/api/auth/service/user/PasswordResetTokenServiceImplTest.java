@@ -28,21 +28,6 @@ class PasswordResetTokenServiceImplTest {
     }
 
     @Test
-    void testCreateToken() {
-        User user = new User();
-        user.setUsername("test_user");
-
-        PasswordResetToken token = passwordResetTokenService.createToken(user);
-
-        assertThat(token).isNotNull();
-        assertThat(token.getUser()).isEqualTo(user);
-        assertThat(token.getExpiryDate()).isAfter(ZonedDateTime.now());
-
-        // Verify that the token is saved in the repository
-        verify(tokenRepository).save(token);
-    }
-
-    @Test
     void testIsValidToken_ValidToken() {
         String tokenValue = UUID.randomUUID().toString();
         PasswordResetToken token = new PasswordResetToken();

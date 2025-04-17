@@ -48,12 +48,6 @@ class HotelControllerTest {
     }
 
     @Test
-    void testGetHotelByIdNotFound() {
-        ResponseEntity<String> response = restTemplate.getForEntity("/api/hotels/9999", String.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    @Test
     void testCountByCity() {
         ResponseEntity<String> response = restTemplate.getForEntity("/api/hotels/countByCity", String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);

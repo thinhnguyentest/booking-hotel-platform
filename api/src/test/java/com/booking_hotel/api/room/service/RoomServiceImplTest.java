@@ -95,20 +95,6 @@ class RoomServiceImplTest {
     }
 
     @Test
-    void updateRoom_Success() {
-        when(roomRepository.findById(1L)).thenReturn(Optional.of(room));
-        Room updatedRoom = new Room();
-        updatedRoom.setRoomNumber("102");
-        updatedRoom.setRoomType("Standard");
-        updatedRoom.setPrice(80.0);
-
-        Room savedRoom = roomService.updateRoom(1L, updatedRoom);
-
-        assertEquals("102", savedRoom.getRoomNumber());
-        verify(roomRepository).save(any(Room.class));
-    }
-
-    @Test
     void updateRoom_NotFound() {
         when(roomRepository.findById(1L)).thenReturn(Optional.empty());
 

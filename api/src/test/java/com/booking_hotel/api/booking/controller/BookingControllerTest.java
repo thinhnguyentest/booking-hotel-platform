@@ -2,6 +2,7 @@ package com.booking_hotel.api.booking.controller;
 
 import com.booking_hotel.api.booking.dto.BookingResponse;
 import com.booking_hotel.api.booking.entity.Booking;
+import com.booking_hotel.api.booking.service.BookingService;
 import com.booking_hotel.api.exception.ElementNotFoundException;
 import com.booking_hotel.api.utils.messageUtils.MessageUtils;
 import org.junit.jupiter.api.BeforeEach;

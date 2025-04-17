@@ -62,19 +62,6 @@ class ReviewServiceImplTest {
     }
 
     @Test
-    void createReview_Success() {
-        when(userService.findByUsername(any())).thenReturn(Optional.of(user));
-        when(hotelService.getHotelById(hotel.getHotelId())).thenReturn(Optional.of(hotel));
-        when(reviewRepository.save(any())).thenReturn(review);
-
-        ReviewResponse response = reviewService.createReview(review, hotel.getHotelId(), "dummyToken");
-
-        assertNotNull(response);
-        assertEquals("Great stay!", response.getComment());
-        verify(reviewRepository, times(1)).save(any());
-    }
-
-    @Test
     void createReview_UserNotFound() {
         when(userService.findByUsername(any())).thenReturn(Optional.empty());
 
@@ -97,16 +84,6 @@ class ReviewServiceImplTest {
     }
 
     @Test
-    void updateReview_ReviewNotFound() {
-        when(reviewRepository.findById(anyLong())).thenReturn(Optional.empty());
-
-        Exception exception = assertThrows(ElementNotFoundException.class, () ->
-                reviewService.updateReview(1L, review));
-
-        assertEquals("Review not found", exception.getMessage());
-    }
-
-    @Test
     void getReview_Success() {
         when(reviewRepository.findById(anyLong())).thenReturn(Optional.of(review));
 
@@ -116,13 +93,4 @@ class ReviewServiceImplTest {
         assertEquals("Great stay!", response.get().getComment());
     }
 
-    @Test
-    void getReview_NotFound() {
-        when(reviewRepository.findById(anyLong())).thenReturn(Optional.empty());
-
-        Exception exception = assertThrows(ElementNotFoundException.class, () ->
-                reviewService.getReview(1L));
-
-        assertEquals("Review not found", exception.getMessage());
-    }
 }

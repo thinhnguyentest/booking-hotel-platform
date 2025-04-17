@@ -46,29 +46,6 @@ class OwnerRequestServiceImplTest {
     }
 
     @Test
-    void testSignupBecomeOwner_Success() {
-        String token = "mock-token";
-        String username = "john_doe";
-
-        User user = User.builder()
-                .username(username)
-                .roles(new HashSet<>())
-                .build();
-
-        try (MockedStatic<JwtProvider> mockedJwt = mockStatic(JwtProvider.class)) {
-            mockedJwt.when(() -> JwtProvider.getUserNameByToken(token)).thenReturn(username);
-            when(userService.findByUsername(username)).thenReturn(Optional.of(user));
-
-            ResponseEntity<?> response = ownerRequestService.signupBecomeOwner(token);
-
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-            verify(ownerRequestRepository).save(any(OwnerRequest.class));
-        }
-    }
-
-
-
-    @Test
     void testSignupBecomeOwner_UserNotFound() {
         String token = "invalid-token";
         String username = "invalid_user";

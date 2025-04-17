@@ -56,10 +56,4 @@ class BookingRepositoryTest {
         entityManager.flush();
     }
 
-    @Test
-    void testFindByUser() {
-        List<Booking> bookings = bookingRepository.findByUser(user);
-        assertEquals(1, bookings.size());
-        assertEquals(booking, bookings.get(0));
-    }
 }

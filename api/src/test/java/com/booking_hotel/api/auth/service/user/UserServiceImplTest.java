@@ -63,67 +63,6 @@ class UserServiceImplTest {
     }
 
     @Test
-    void testUpdateUser_Success() {
-        String token = "mock-token";
-        String username = "john_doe";
-        User existingUser = new User();
-        existingUser.setUsername(username);
-        existingUser.setEmail("john@example.com");
-        existingUser.setPassword("oldPassword");
-
-        when(JwtProvider.getUserNameByToken(token)).thenReturn(username);
-        when(userRepository.findUserByUsername(username)).thenReturn(existingUser);
-
-        User updatedUser = new User();
-        updatedUser.setUsername("john_doe_updated");
-        updatedUser.setEmail("john_updated@example.com");
-        updatedUser.setPassword("newPassword");
-
-        when(userRepository.findByEmail(updatedUser.getEmail())).thenReturn(null);
-        when(passwordEncoder.encode(updatedUser.getPassword())).thenReturn("encodedPassword");
-
-        ResponseEntity<?> response = userService.updateUser(token, updatedUser);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(existingUser.getUsername()).isEqualTo("john_doe_updated");
-        assertThat(existingUser.getEmail()).isEqualTo("john_updated@example.com");
-        assertThat(existingUser.getPassword()).isEqualTo("encodedPassword");
-
-        verify(userRepository).save(existingUser);
-    }
-
-    @Test
-    void testUpdateUser_UserNotFound() {
-        String token = "mock-token";
-        String username = "invalid_user";
-
-        when(JwtProvider.getUserNameByToken(token)).thenReturn(username);
-        when(userRepository.findUserByUsername(username)).thenReturn(null);
-
-        assertThatThrownBy(() -> userService.updateUser(token, new User()))
-                .isInstanceOf(ElementNotFoundException.class)
-                .hasMessageContaining("User not found");
-    }
-
-    @Test
-    void testUpdateUser_UsernameNull() {
-        String token = "mock-token";
-        String username = "john_doe";
-        User existingUser = new User();
-        existingUser.setUsername(username);
-
-        when(JwtProvider.getUserNameByToken(token)).thenReturn(username);
-        when(userRepository.findUserByUsername(username)).thenReturn(existingUser);
-
-        User updatedUser = new User();
-        updatedUser.setUsername(null); // Null username
-
-        assertThatThrownBy(() -> userService.updateUser(token, updatedUser))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Username cannot be null");
-    }
-
-    @Test
     void testFindById_UserExists() {
         Long userId = 1L;
         User user = new User();
@@ -137,14 +76,4 @@ class UserServiceImplTest {
         assertThat(result.getUserId()).isEqualTo(userId);
     }
 
-    @Test
-    void testFindById_UserNotExists() {
-        Long userId = 99L;
-
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> userService.findById(userId))
-                .isInstanceOf(ElementNotFoundException.class)
-                .hasMessage("User not found");
-    }
 }

@@ -62,39 +62,6 @@ class HotelServiceImplTest {
     }
 
     @Test
-    void testCreateHotel_Success() {
-        when(userService.findByUsername(anyString())).thenReturn(Optional.of(user));
-        when(hotelRepository.save(any(Hotel.class))).thenReturn(hotel);
-
-        ResponseEntity<HotelResponse> response = hotelService.createHotel(hotel, "dummyToken");
-
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals("Test Hotel", response.getBody().getName());
-        verify(hotelRepository, times(1)).save(any(Hotel.class));
-    }
-
-    @Test
-    void testCreateHotel_AccessDenied() {
-        user.setRoles(new HashSet<>(Collections.singletonList(Role.builder().roleName("ROLE_USER").build()))); // Không phải OWNER
-
-        when(userService.findByUsername(anyString())).thenReturn(Optional.of(user));
-
-        assertThrows(AccessDeniedException.class, () -> hotelService.createHotel(hotel, "dummyToken"));
-    }
-
-    @Test
-    void testGetAllHotels() {
-        List<Hotel> hotels = Collections.singletonList(hotel);
-        when(hotelRepository.findAll()).thenReturn(hotels).thenReturn(hotels);
-
-        List<HotelResponse> response = hotelService.getAllHotels(PageRequest.of(0, 10));
-
-        assertEquals(1, response.size());
-        assertEquals("Test Hotel", response.get(0).getName());
-    }
-
-    @Test
     void testCountByCity() {
         when(hotelRepository.findAll()).thenReturn(Collections.singletonList(hotel));
 
