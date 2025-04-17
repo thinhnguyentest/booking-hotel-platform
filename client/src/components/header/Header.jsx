@@ -68,7 +68,7 @@ const Header = () => {
               Hotel, car and experiences
             </h1>
             <p className="headerDesc">
-              Accompanying us, you have a trip full of experiences. With Chisfis, booking accommodation, resort villas
+              Accompanying us, you have a trip full of experiences. With Chisfis, booking accommodation
             </p>
           </div>
           <div className="headerImages">
