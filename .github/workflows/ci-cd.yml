@@ -27,10 +27,6 @@ jobs:
           docker-compose down
           docker-compose up --build -d  # Chạy ở chế độ nền
 
-      - name: View logs
-        run: |
-          docker-compose logs
-
       - name: Wait for app to be ready
         run: |
           sleep 30
