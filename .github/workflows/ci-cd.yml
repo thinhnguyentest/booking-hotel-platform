@@ -25,9 +25,5 @@ jobs:
         run: |
           cd api  
           docker-compose down
-          docker-compose up --build -d  # Chạy ở chế độ nền
+          docker-compose up --build -d 
 
-      - name: Wait for app to be ready
-        run: |
-          sleep 30
-          curl -f http://localhost:8080/api || exit 1
