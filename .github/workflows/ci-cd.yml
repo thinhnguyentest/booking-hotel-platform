@@ -25,4 +25,13 @@ jobs:
         run: |
           cd api  
           docker-compose down
-          docker-compose up --build
+          docker-compose up --build -d  # Chạy ở chế độ nền
+
+      - name: View logs
+        run: |
+          docker-compose logs
+
+      - name: Wait for app to be ready
+        run: |
+          sleep 30
+          curl -f http://localhost:8080/api || exit 1
